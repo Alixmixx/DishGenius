@@ -1,7 +1,7 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet } from "react-native";
 
-import { ChatScreen } from '@/components/ChatScreen';
-import { ThemedView } from '@/components/ThemedView';
+import { ChatScreen } from "@/components/chat/ChatScreen";
+import { ThemedView } from "@/components/ThemedView";
 
 /**
  * Chat tab screen that displays the ChatBot interface
