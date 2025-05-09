@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-import { ChatScreen } from '@/components/ChatScreen';
+import { MenuScreen } from '@/components/MenuScreen';
 import { ThemedView } from '@/components/ThemedView';
 
 /**
@@ -9,7 +9,7 @@ import { ThemedView } from '@/components/ThemedView';
 export default function MenuTab() {
   return (
     <ThemedView style={styles.container}>
-      <ChatScreen />
+      <MenuScreen />
     </ThemedView>
   );
 }
