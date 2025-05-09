@@ -1,15 +1,15 @@
 import { StyleSheet } from "react-native";
 
-import { ChatScreen } from "@/components/chat/ChatScreen";
+import { MenuScreen } from "@/components/menu/MenuScreen";
 import { ThemedView } from "@/components/ThemedView";
 
 /**
  * Chat tab screen that displays the ChatBot interface
  */
-export default function ChatTab() {
+export default function MenuTab() {
   return (
     <ThemedView style={styles.container}>
-      <ChatScreen />
+      <MenuScreen />
     </ThemedView>
   );
 }
