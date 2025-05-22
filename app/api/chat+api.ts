@@ -29,12 +29,13 @@ async function executeToolCalls(toolCalls: any[]): Promise<ToolResult[]> {
   return Promise.all(
     toolCalls.map(async (toolCall) => {
       try {
-        const toolName = toolCall.function.name;
+        // Handle the new responses API format for function calls
+        const toolName = toolCall.name || toolCall.function?.name;
         let params: any = {};
 
         try {
-          // Parse the arguments JSON string
-          params = JSON.parse(toolCall.function.arguments);
+          // Parse the arguments JSON string (different format in new API)
+          params = JSON.parse(toolCall.arguments || toolCall.function?.arguments);
         } catch (e: any) {
           throw new Error(`Invalid tool arguments: ${e.message}`);
         }
@@ -112,34 +113,33 @@ export async function POST(request: Request) {
     );
 
     // Call OpenAI API with tools
-    const completion = await openai.chat.completions.create({
+    const response = await openai.responses.create({
       model: "gpt-4o-mini",
-      messages,
+      input: messages,
       tools,
-      tool_choice: "auto",
     });
 
     // Extract the response
-    const assistantMessage = completion.choices[0]?.message;
-
+    const output = response.output[0];
+    const outputText = response.output_text;
     // Check if the LLM wants to call tools
-    if (
-      assistantMessage?.tool_calls &&
-      assistantMessage.tool_calls.length > 0
-    ) {
-      console.log(
-        "Model is requesting tool calls:",
-        assistantMessage.tool_calls
-      );
+    if (output?.type === "function_call") {
+      // For function call outputs, use the output directly
+      const toolCalls = [output];
+      
+      console.log("Model is requesting tool calls:", toolCalls);
 
       // Execute the tools
-      const toolResults = await executeToolCalls(assistantMessage.tool_calls);
+      const toolResults = await executeToolCalls(toolCalls);
       console.log("Tool results:", toolResults);
 
       // Add tool results to messages and continue the conversation
       const updatedMessages = [
         ...messages,
-        assistantMessage, // Add the assistant's response with tool calls
+        {
+          role: "assistant",
+          content: outputText
+        },
         ...toolResults.map((result) => ({
           role: "tool",
           tool_call_id: result.id,
@@ -150,29 +150,35 @@ export async function POST(request: Request) {
       ];
 
       // Get the final response with tool outputs integrated
-      const finalCompletion = await openai.chat.completions.create({
+      const finalResponse = await openai.responses.create({
         model: "gpt-4o-mini",
-        messages: updatedMessages,
+        input: updatedMessages,
         tools,
-        tool_choice: "auto",
       });
 
-      const finalAssistantMessage = finalCompletion.choices[0]?.message;
+      const finalOutput = finalResponse.output[0];
+      const finalOutputText = finalResponse.output_text;
 
-      if (!finalAssistantMessage) {
+      if (!finalOutput || !finalOutputText) {
         return errorResponse("Failed to get final response from OpenAI.", 500);
       }
 
-      return Response.json(finalAssistantMessage);
+      return Response.json({
+        role: "assistant",
+        content: finalOutputText
+      });
     }
 
-    if (!assistantMessage || !assistantMessage.content) {
-      console.error("OpenAI response missing content:", completion);
+    if (!output || !outputText) {
+      console.error("OpenAI response missing content:", response);
       return errorResponse("Failed to get response content from OpenAI.", 500);
     }
 
     // Send only the assistant's message back to the client
-    return Response.json(assistantMessage);
+    return Response.json({
+      role: "assistant",
+      content: outputText
+    });
   } catch (error: any) {
     console.error("Error calling OpenAI:", error);
 

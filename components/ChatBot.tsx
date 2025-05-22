@@ -4,11 +4,11 @@ import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
 
 /**
- * Extended Message type to support tool calls
+ * Extended Message type to support tool calls from both old and new OpenAI APIs
  */
 type Message = {
-  role: 'user' | 'assistant' | 'system' | 'tool';
-  content: string;
+  role?: 'user' | 'assistant' | 'system' | 'tool';
+  content?: string;
   tool_call_id?: string;
   tool_calls?: Array<{
     id: string;
@@ -17,6 +17,12 @@ type Message = {
       arguments: string;
     }
   }>;
+  // New API fields for function_call outputs
+  type?: 'message' | 'function_call' | 'file_search_call' | 'web_search_call' | 'computer_call';
+  id?: string;
+  name?: string;
+  arguments?: string;
+  status?: string;
 };
 
 /**
@@ -67,6 +73,7 @@ export function ChatBot({
 
       // Handle the response (which might include tool calls)
       if (data) {
+        // For new OpenAI responses API, the data is already formatted as a Message
         setMessages(prev => [...prev, data]);
       } else {
         console.error("No response data received from backend");
@@ -86,6 +93,8 @@ export function ChatBot({
    * Format JSON for display
    */
   const formatJSON = (jsonString: string) => {
+    if (!jsonString) return '{}';
+    
     try {
       const parsed = JSON.parse(jsonString);
       return JSON.stringify(parsed, null, 2);
@@ -98,6 +107,20 @@ export function ChatBot({
    * Renders a message item in the chat
    */
   const renderMessage = ({ item }: { item: Message }) => {
+    // Handle direct function_call objects from new API
+    if (item.type === 'function_call') {
+      return (
+        <ThemedView style={styles.toolCall}>
+          <ThemedText style={styles.toolName}>
+            Using tool: {item.name}
+          </ThemedText>
+          <ThemedText style={styles.toolArgs}>
+            With parameters: {formatJSON(item.arguments || '{}')}
+          </ThemedText>
+        </ThemedView>
+      );
+    }
+    
     const isUser = item.role === 'user';
     const isSystem = item.role === 'system';
     const isAssistant = item.role === 'assistant';
@@ -130,13 +153,14 @@ export function ChatBot({
       );
     }
     
+    
     // If it's a tool response message
     if (isTool) {
       return (
         <ThemedView style={[styles.messageBubble, styles.toolMessage]}>
           <ThemedText style={styles.toolName}>Tool result:</ThemedText>
           <ThemedText style={styles.toolMessageText}>
-            {formatJSON(item.content)}
+            {formatJSON(item.content || '{}')}
           </ThemedText>
         </ThemedView>
       );
