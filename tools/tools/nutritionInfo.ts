@@ -57,7 +57,7 @@ const nutritionDatabase: Record<string, any> = {
  * This will be attached to the tool definition but not sent to OpenAI
  */
 async function executeNutritionLookup(params: any) {
-  const { food, unit = "serving" } = params;
+  const { food = "", unit = "serving" } = params;
   
   // Try to find the food in our database (case-insensitive)
   const foodKey = Object.keys(nutritionDatabase).find(

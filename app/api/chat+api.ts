@@ -29,13 +29,16 @@ async function executeToolCalls(toolCalls: any[]): Promise<ToolResult[]> {
   return Promise.all(
     toolCalls.map(async (toolCall) => {
       try {
-        // Handle the new responses API format for function calls
-        const toolName = toolCall.name || toolCall.function?.name;
+        // Extract the tool name from the new API format
+        const toolName = toolCall.name;
         let params: any = {};
 
         try {
-          // Parse the arguments JSON string (different format in new API)
-          params = JSON.parse(toolCall.arguments || toolCall.function?.arguments);
+          // Parse the arguments JSON string from the new API format
+          params = JSON.parse(toolCall.arguments || "{}");
+          
+          // Log the extracted parameters for debugging
+          console.log(`Executing tool ${toolName} with params:`, params);
         } catch (e: any) {
           throw new Error(`Invalid tool arguments: ${e.message}`);
         }
@@ -140,13 +143,15 @@ export async function POST(request: Request) {
           role: "assistant",
           content: outputText
         },
-        ...toolResults.map((result) => ({
-          role: "tool",
-          tool_call_id: result.id,
-          content: result.error
-            ? JSON.stringify({ error: result.error })
-            : JSON.stringify(result.result),
-        })),
+        // Send the tool results in a format the model can understand
+        {
+          role: "user",
+          content: `Tool results: ${JSON.stringify(toolResults.map(result => ({
+            tool: result.id,
+            result: result.result,
+            error: result.error
+          })))}`
+        },
       ];
 
       // Get the final response with tool outputs integrated

@@ -36,7 +36,7 @@ const recipeDatabase = [
  * This will be attached to the tool definition but not sent to OpenAI
  */
 async function executeRecipeLookup(params: any) {
-  const { query, filterByDifficulty } = params;
+  const { query = "", filterByDifficulty } = params;
   
   // Convert query to lowercase for case-insensitive matching
   const searchTerm = query.toLowerCase();

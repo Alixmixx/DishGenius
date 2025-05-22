@@ -36,9 +36,11 @@ export interface FunctionDefinition {
 
 /**
  * Tool definition interface following OpenAI's function calling schema
+ * Updated for the new responses API which requires name at the top level
  */
 export interface ToolDefinition {
   type: "function";
+  name?: string; // Added for new API compatibility
   function: FunctionDefinition;
   // This is our custom property not sent to OpenAI
   execute?: (params: Record<string, any>) => Promise<any>;

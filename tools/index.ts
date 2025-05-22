@@ -12,6 +12,8 @@ const toolRegistry = new Map<string, ToolDefinition>();
  * Register a new tool
  */
 export function registerTool(tool: ToolDefinition) {
+  // For the new responses API, we need the name at the top level too
+  tool.name = tool.function.name;
   toolRegistry.set(tool.function.name, tool);
   console.log(`Tool registered: ${tool.function.name}`);
 }
